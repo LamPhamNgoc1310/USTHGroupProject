@@ -4,25 +4,18 @@ from model import load_model
 import tkinter as tk
 from tkinter import filedialog
 
-def choose_image():
-    file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.png;*.gif")])
-    if file_path:
-        # Process the chosen image here
-        print("Selected image:", file_path)
-        
-    return file_path
 
+def get_model():
+    # Create the main window
+    window = tk.Tk()
+    window.title("Image Uploader")
 
-# Create the main window
-window = tk.Tk()
-window.title("Image Uploader")
+    # Create a button to trigger the image selection
+    button = tk.Button(window, text="Choose Image", command=choose_image)
+    button.pack()
 
-# Create a button to trigger the image selection
-button = tk.Button(window, text="Choose Image", command=choose_image)
-button.pack()
-
-# # Start the event loop
-# window.mainloop()
+    # # Start the event loop
+    window.mainloop()
 
 def keybind(label):
     print('Keybind')
@@ -62,8 +55,17 @@ def keybind(label):
     else: 
         print("Invalid label")
 
-if __name__ == '__main__':
-    file_path = choose_image()
+
+def choose_image():
+    file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg;*.png;*.gif")])
+    if file_path:
+        # Process the chosen image here
+        print("Selected image:", file_path)
+        
     label = load_model(file_path)
+    
     keybind(label)
-    keyboard.wait()
+
+
+if __name__ == '__main__':
+    get_model()
