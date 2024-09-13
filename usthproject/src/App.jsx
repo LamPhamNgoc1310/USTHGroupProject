@@ -1,11 +1,13 @@
-import './App.css';
+import './App.css'
+import MainMenu from './components/MainMenu'
 
 function App() {
+  
   return (
-    <div>
-      Hello
+    <div className="container">
+      <MainMenu />
     </div>
-  );
+  )
 }
 
-export default App;
+export default App
