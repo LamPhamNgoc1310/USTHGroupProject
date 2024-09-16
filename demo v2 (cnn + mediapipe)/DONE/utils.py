@@ -306,3 +306,15 @@ def extract_feature_vid(input_image):
                     pinky_DipX, pinky_DipY, pinky_DipZ,
                     pinky_TipX, pinky_TipY, pinky_TipZ,
                     annotated_image)
+
+def pred(img, labels: list, model, unknownThresh=0.97):
+    global pred_output, cLevel
+    
+    pred = model.predict(img,verbose=0)
+    max_position = np.argmax(pred)
+    pred_output = labels[max_position]
+    if pred[0][max_position] < unknownThresh: 
+        pred_output = 'unknown gesture'
+    cLevel = np.ceil(pred[0][max_position] * 100) / 100
+    # return pred_output, cLevel
+
