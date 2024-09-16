@@ -1,9 +1,138 @@
 <mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36" version="24.7.14">
   <diagram name="Page-1" id="qM-dndeL01rpGQbccABR">
-    <mxGraphModel>
+    <mxGraphModel dx="1434" dy="761" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-1" value="Front-end" style="swimlane;whiteSpace=wrap" vertex="1" parent="1">
+          <mxGeometry x="164.5" y="128" width="280" height="162" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-2" value="Display the video recording the user" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-1">
+          <mxGeometry x="57.75" y="42" width="164.5" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-3" value="Display the name of the action" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-1">
+          <mxGeometry x="75" y="96" width="130" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-4" value="Back-end" style="swimlane;whiteSpace=wrap;startSize=23;" vertex="1" parent="1">
+          <mxGeometry x="445" y="128" width="280" height="302" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-5" value="localhost server receives the video" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-4">
+          <mxGeometry x="65" y="42" width="170" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-6" value="receives the keybinds" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-4">
+          <mxGeometry x="92.5" y="112" width="115" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-7" value="calls the player app&#39;s api" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-4">
+          <mxGeometry x="92.5" y="180" width="115" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-8" value="activate the app&#39;s function" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-4">
+          <mxGeometry x="92.5" y="242" width="115" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-9" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-4" source="0gMSVo61wFCWmxPn4bPW-6" target="0gMSVo61wFCWmxPn4bPW-7">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="95" y="162" as="sourcePoint" />
+            <mxPoint x="268" y="162" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-10" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-4" source="0gMSVo61wFCWmxPn4bPW-7" target="0gMSVo61wFCWmxPn4bPW-8">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="152" as="sourcePoint" />
+            <mxPoint x="160" y="190" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-11" value="Machine Learning" style="swimlane;whiteSpace=wrap" vertex="1" parent="1">
+          <mxGeometry x="725" y="128" width="280" height="462" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-12" value="&amp;nbsp;receives the video" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-11">
+          <mxGeometry x="82.75" y="42" width="114.5" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-13" value="uses CV-python to capture the hand&amp;nbsp;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-11">
+          <mxGeometry x="65" y="112" width="150" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-14" value="uses mediapipe to identify the joints of that hand" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-11">
+          <mxGeometry x="72.5" y="192" width="135" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-15" value="uses the joints coordinates to identify the label of that gesture" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-11">
+          <mxGeometry x="75.25" y="282" width="130" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-16" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-11" source="0gMSVo61wFCWmxPn4bPW-12" target="0gMSVo61wFCWmxPn4bPW-13">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="-164.5" y="342" as="sourcePoint" />
+            <mxPoint x="-114.5" y="292" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-17" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-11" source="0gMSVo61wFCWmxPn4bPW-13" target="0gMSVo61wFCWmxPn4bPW-14">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="150" y="82" as="sourcePoint" />
+            <mxPoint x="150" y="122" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-18" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-11" source="0gMSVo61wFCWmxPn4bPW-14" target="0gMSVo61wFCWmxPn4bPW-15">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="139.5" y="220" as="sourcePoint" />
+            <mxPoint x="139.5" y="262" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-19" value="" style="endArrow=classic;html=1;rounded=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="0gMSVo61wFCWmxPn4bPW-11" source="0gMSVo61wFCWmxPn4bPW-15" target="0gMSVo61wFCWmxPn4bPW-20">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="145" y="352" as="sourcePoint" />
+            <mxPoint x="138" y="372" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-20" value="sends the keybind" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="0gMSVo61wFCWmxPn4bPW-11">
+          <mxGeometry x="82.75" y="382" width="115" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-21" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-22" target="0gMSVo61wFCWmxPn4bPW-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="130" y="413" as="sourcePoint" />
+            <mxPoint x="500" y="410" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-22" value="&lt;div&gt;Input:&lt;/div&gt;&lt;div&gt;Camera records user&#39;s hand&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="20" y="194" width="100" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-23" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryPerimeter=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-2" target="0gMSVo61wFCWmxPn4bPW-5">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="470" as="sourcePoint" />
+            <mxPoint x="500" y="220" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-24" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-5" target="0gMSVo61wFCWmxPn4bPW-12">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="397" y="188" as="sourcePoint" />
+            <mxPoint x="515" y="188" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-25" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-8" target="0gMSVo61wFCWmxPn4bPW-3">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="560" y="470" as="sourcePoint" />
+            <mxPoint x="400" y="255" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="510" y="385" />
+              <mxPoint x="510" y="239" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-26" value="Output:&lt;div&gt;Activates the corresponding action&lt;/div&gt;" style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="266.75" y="340" width="75.5" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-27" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-1" target="0gMSVo61wFCWmxPn4bPW-26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="397" y="195" as="sourcePoint" />
+            <mxPoint x="520" y="195" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="0gMSVo61wFCWmxPn4bPW-28" value="" style="endArrow=classic;html=1;rounded=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="1" source="0gMSVo61wFCWmxPn4bPW-20" target="0gMSVo61wFCWmxPn4bPW-6">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="840" y="610" as="sourcePoint" />
+            <mxPoint x="760" y="250" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="760" y="525" />
+              <mxPoint x="760" y="385" />
+              <mxPoint x="760" y="255" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
       </root>
     </mxGraphModel>
   </diagram>
