@@ -1,11 +1,11 @@
 import React from 'react'
 
-function Home() {
+function Toolbar() {
   return (
     <div>
-      <h1>Hellow</h1>
+      
     </div>
   )
 }
 
-export default Home
+export default Toolbar

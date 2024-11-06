@@ -27,6 +27,7 @@
     "babel-loader": "^9.2.1",
     "css-loader": "^6.11.0",
     "electron": "33.0.2",
+    "electron-reload": "^2.0.0-alpha.1",
     "node-loader": "^2.0.0",
     "style-loader": "^3.3.4"
   },
@@ -37,6 +38,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "antd": "^5.21.6",
     "electron-squirrel-startup": "^1.0.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
