@@ -47,3 +47,7 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
+
+// mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {
+//   console.error('Failed to load URL:', error);
+// });
