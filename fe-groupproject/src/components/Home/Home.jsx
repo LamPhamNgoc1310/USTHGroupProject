@@ -10,6 +10,7 @@ function Home() {
   const [isToolbarModalOpen, setIsToolbarModalOpen] = useState(false); // Toolbar modal state
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+
   // Toggle theme between dark and light
   const toggleTheme = () => setIsDarkMode((prev) => !prev);
   
@@ -63,8 +64,19 @@ function Home() {
           open={isUserManualOpen} 
           onOk={() => handleUserManualModal(false)} 
           onCancel={() => handleUserManualModal(false)}>
-            <p>Lorem, ipsum dolor sit amet consectetur adipisicing elit. Vel laboriosam tempore dolore adipisci ducimus, 
-            officiis doloremque facilis atque, illum ex recusandae optio eos dicta quisquam repudiandae, iste quod a maxime?</p>
+            <h1>User Manual</h1>
+            <ul>
+              <h2>1. Recording</h2>
+              <li>Press the "RECORD" button to start the camera</li>
+              <li>What hand gestures the camera saw will be the input to the app</li>
+            </ul>
+            <ul>
+              <h2>2. Setting</h2>
+              <li>Press "Open Keybind Setting" to open the setting</li>
+              <li>The window is where you setup your keybinding</li>
+              <li>Labels can be asigned to a shortcut/key</li>
+            </ul>
+
         </Modal>
 
       </div>
