@@ -1,7 +1,8 @@
 .home-container {
     justify-content: center;
     align-items: center;
-    gap: 10%
+    gap: 10%;
+    padding: 10px;
 }
 
 .record-button {
