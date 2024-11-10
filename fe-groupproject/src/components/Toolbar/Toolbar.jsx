@@ -41,14 +41,14 @@ function Toolbar({ isDarkMode, toggleTheme, isToolbarModalOpen, openToolbarModal
         {isDarkMode ? 'Dark Mode' : 'Light Mode'}
       </Button>
 
-      {/* Open Modal Button */}
+      {/* Open Setting Button */}
       <Button
         className='toolbar-btn'
         type='link'
         onClick={openToolbarModal} // Open modal when button clicked
         aria-label='Open Modal'
       >
-        Open Modal
+        Open Keybind Setting
       </Button>
 
       {/* Assign Hand Gestures Modal */}
