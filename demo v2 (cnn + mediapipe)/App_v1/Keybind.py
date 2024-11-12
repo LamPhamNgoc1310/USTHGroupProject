@@ -13,18 +13,15 @@ shortcutDict = {
 def activateShortcut(pred_output, count, activationTime):
     for key, value in shortcutDict.items():
         if key == pred_output:
-            if isinstance(value, list):
-                if pred_output == 'F' or pred_output == 'B':
-                    if count % (acitivationTime/2) == 0:
-                        hotkey(*value)
-                
-                if pred_output == 'A' or pred_output == 'Y':
-                    if count == activationTime:
-                        hotkey(*value)
-                
-                hotkey(*value)
-            else:
-                hotkey(value)
+            if pred_output == 'F' or pred_output == 'B':
+                if count % (acitivationTime/2) == 0:
+                    hotkey(*value)
+            
+            if pred_output == 'A' or pred_output == 'Y':
+                if count == activationTime:
+                    hotkey(*value)
+            
+            hotkey(*value)
     # if pred_output == 'L': hotkey('ctrl', 'up')
     # if pred_output == 'W': hotkey('ctrl', 'down')
     # if pred_output == 'F' and count % (activationTime/2) == 0: hotkey('ctrl', 'left')
