@@ -88,7 +88,6 @@ def main():
             pred_thread = Thread(target=pred, args=(input_IMG, labels, model,))
             pred_thread.start()
 
-        cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
 
         if prev_pred_output == pred_output:
             count += 1
@@ -105,8 +104,10 @@ def main():
         cTime = time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
+        # hiển thị fps
         cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
-
+        # hiển thị pred label và confidence level
+        cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
         cv2.imshow('Img', output)
         cv2.waitKey(1)
 

@@ -1,7 +1,7 @@
 from pyautogui import hotkey
 
 shortcutDict = {
-    'L' : ['ctrl', 'up']
+    'L' : ['ctrl', 'up'],
     'W' : ['ctrl', 'down'],
     'F' : ['ctrl', 'left'],
     'B' : ['ctrl', 'right'],

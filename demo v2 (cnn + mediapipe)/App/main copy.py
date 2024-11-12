@@ -331,11 +331,16 @@ def pred(img, labels: list, model, unknownThresh=0.97):
     cLevel = np.ceil(pred[0][max_position] * 100) / 100
 
 def activateShortcut(pred_output, count, activationTime):
+    # count tăng liên tục
+    # count > activation time (which is a const) -> hiện chữ "activated"
+    # 
     if pred_output == 'L': hotkey('ctrl', 'up')
     if pred_output == 'W': hotkey('ctrl', 'down')
-    if pred_output == 'F' and count % (activationTime/2) == 0: hotkey('ctrl', 'left')
+    if pred_output == 'F' and count % (activationTime/2) == 0: hotkey('ctrl', 'left') 
+    # control tốc độ thôi không có gì hot
     if pred_output == 'B' and count % (activationTime/2) == 0: hotkey('ctrl', 'right')
     if count == activationTime:
+        # để nó activate 1 lần chứ không liên tục cho mỗi loop
         if pred_output == 'A': hotkey('space')
         if pred_output == 'Y': hotkey('ctrl', 'r')
 
