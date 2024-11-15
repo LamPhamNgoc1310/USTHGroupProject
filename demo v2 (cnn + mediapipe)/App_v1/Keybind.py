@@ -1,31 +1,58 @@
 from pyautogui import hotkey
+import time
 
-shortcutDict = {
-    'L' : ['ctrl', 'up'],
-    'W' : ['ctrl', 'down'],
-    'F' : ['ctrl', 'left'],
-    'B' : ['ctrl', 'right'],
-    'A' : ['space'],
-    'Y' : ['ctrl', 'r'] 
-}
+def loadShortcut(filename):
+    shortcut_dict = {}
+    with open(filename, 'r') as file:
+        for line in file:
+            line = line.strip()
+            if line:
+                key, value = line.split(':')
+                shortcut_dict[key] = value.split(',')
+
+    return shortcut_dict
+        
+shortcutFile = 'shortcuts.txt'
+shortcutDict =  loadShortcut(shortcutFile)
+
+def printShortcut(shortcut_dict):
+    print("Shortcut Dictionary:")
+    for key, value in shortcutDict.items():
+        print(f"{key}: {value}")
+
+printShortcut(shortcutFile)
 
 # Function to activate shortcut
-def activateShortcut(pred_output, count, activationTime):
+def activateShortcut(pred_output, count, activationTime, shorcutDict):
     for key, value in shortcutDict.items():
         if key == pred_output:
             if pred_output == 'F' or pred_output == 'B':
                 if count % (acitivationTime/2) == 0:
                     hotkey(*value)
             
-            if pred_output == 'A' or pred_output == 'Y':
+            elif pred_output == 'A' or pred_output == 'Y':
                 if count == activationTime:
                     hotkey(*value)
-            
-            hotkey(*value)
-    # if pred_output == 'L': hotkey('ctrl', 'up')
-    # if pred_output == 'W': hotkey('ctrl', 'down')
-    # if pred_output == 'F' and count % (activationTime/2) == 0: hotkey('ctrl', 'left')
-    # if pred_output == 'B' and count % (activationTime/2) == 0: hotkey('ctrl', 'right')
-    # if count == activationTime:
-    #     if pred_output == 'A': hotkey('space')
-    #     if pred_output == 'Y': hotkey('ctrl', 'r')
+            else:
+                hotkey(*value)
+
+
+def addShortcut(filename):
+    
+    dataset = loadShortcut(shortcutFile)
+    
+    label = input('Enter a new label: ').strip()
+    if label in dataset:
+        print(f"The label '{label}' already exists with shortcut: {dataset[label]}")
+        return
+    
+    shortcut = input("Enter a new shortcut (ex: 'ctrl,up'): ").strip().split(',')
+    
+    
+    shortcut_str = ','.join(shortcut)
+    
+    with open(filename, 'a') as file:
+        file.write(f'{label}:{shortcut_str}\n')
+
+
+addShortcut(shortcutFile)
