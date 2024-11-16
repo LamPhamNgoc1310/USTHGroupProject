@@ -1,3 +1,6 @@
+const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
+
 module.exports = {
   /**
    * This is the main entry point for your application, it's the first file
@@ -11,4 +14,11 @@ module.exports = {
   externals: {
     'electron-reload': 'commonjs electron-reload'
   },  
+  plugins: [
+    new CopyWebpackPlugin({
+      patterns: [
+        { from: 'src/neco.png', to: 'dist/neco.png' },  // Adjust the path according to your structure
+      ],
+    }),
+  ],
 };
