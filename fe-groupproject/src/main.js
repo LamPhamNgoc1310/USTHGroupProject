@@ -20,6 +20,7 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// Create main window
 const createWindow = () => {
   mainWindow = new BrowserWindow({
     width: 800,
@@ -58,6 +59,7 @@ const createTray = () => {
     {
       label: 'Quit',
       click: () => {
+        tray.destroy();
         app.quit();
       }
     }
