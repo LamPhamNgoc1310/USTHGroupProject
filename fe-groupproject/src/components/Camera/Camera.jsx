@@ -1,91 +1,72 @@
+// TODO:
+// run in background
+// accessing local config files using FileReader(), note: must add a function to read auto
+
 import React, { useState, useRef, useEffect } from "react";
-import { Button, Modal, Select } from "antd";
+import { Button, Modal} from "antd";
 import "./Camera.css";
 
 function Camera() {
   const [recording, setRecording] = useState(false);
   const [isUserManualOpen, setIsUserManualOpen] = useState(false); // User Manual modal state
+  const [time, setTime] = useState(0);
 
-  // Toggle recording state
-  const toggleRecording = () => setRecording((prev) => !prev);
+  useEffect(()=> {
+    let timer;
+    if(recording) {
+        timer = setInterval(()=> {
+            setTime((prev) => prev+1)
+        }, 1000);
+    };
+
+    return () => clearInterval(timer);
+  }, [recording])
+  
+  const formatTime = (time) => {
+    const hours = Math.floor(time / 3600);
+    const minutes = Math.floor((time % 3600)/60);
+    const seconds = Math.floor((time % 3600) % 60);
+    return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}`
+  }
+
+  const handleStartRecording = () => {
+    setRecording((prev)=>!prev);
+  };
+
+  const handleStopRecording = () => {
+    setRecording((prev)=>!prev);
+  };
 
   // Handle modal open/close for User Manual
   const handleUserManualModal = (open) => setIsUserManualOpen(open);
 
-  // Get camera
-  const [cameras, setCameras] = useState([]);
-  const [selectedCameraId, setSelectedCameraId] = useState(null);
-  const getCameras = async () => {
-    try {
-      const cameras = await navigator.mediaDevices.enumerateDevices();
-      setCameras(cameras.filter((camera) => camera.kind === "videoinput"));
-      if(cameras.length >0) {
-        setSelectedCameraId(cameras[0].deviceId);
-      }
-    } catch (e) {
-      console.log("getCamera error:", e);
-    }
-  };
-  useEffect(() => {
-    getCameras();
-  }, []);
-
-  // Video capture
-  const videoRef = useRef(null);
-
-  const getVideo = (cameraId) => {
-    console.log("Selected Camera Id:", selectedCameraId);
-    navigator.mediaDevices
-      .getUserMedia({
-        video: { 
-          deviceId: cameraId ? { exact: cameraId } : undefined,
-          width: 1920, height: 1080 },
-      })
-      .then((stream) => {
-        let video = videoRef.current;
-        video.srcObject = stream;
-        video.play();
-      })
-      .catch((e) => {
-        console.error("getVideo error:", e);
-      });
-  };
-
-  useEffect(() => {
-    if (selectedCameraId) {
-      getVideo(selectedCameraId);
-    }
-
-  }, [selectedCameraId]);
-
   return (
     <div className="camera-container">
-      <div className="camera-select">
-        <Select
-          placeholder="Select a Camera"
-          style={{ width: 200 }}
-          onChange={(value) => setSelectedCameraId(value)}
-          value={selectedCameraId}
-        >
-          {cameras.map((camera) => (
-            <Select.Option key={camera.deviceId} value={camera.deviceId}>
-              {camera.label}
-            </Select.Option>
-          ))}
-        </Select>
-      </div>
+      <div className="camera-select"></div>
       <div className="video-container">
-        <video className="video" ref={videoRef}></video>
+        {/* <video className="video" ref={videoRef}></video> */}
       </div>
       <div className="button-container">
         {/* Recording Button */}
-        <Button
-          className="record-button"
-          type="primary"
-          onClick={toggleRecording}
-        >
-          <span className="btn-text">{recording ? "STOP" : "RECORD"}</span>
-        </Button>
+        {recording ? (
+          <Button
+            className="stop-button"
+            type="primary"
+            onClick={handleStartRecording}
+          >
+            <span className="btn-text">Stop</span>
+          </Button>
+        ) : (
+          <Button
+            className="record-button"
+            type="primary"
+            onClick={handleStopRecording}
+          >
+            <span className="btn-text">Record</span>
+          </Button>
+        )}
+        <Button onClick={() => setTime(0)}>Reset time</Button>
+        <span>{formatTime(time)}</span>
 
         {/* User Manual Button */}
         <Button
@@ -93,7 +74,7 @@ function Camera() {
           type="link"
           onClick={() => handleUserManualModal(true)}
         >
-          User Manual
+          <div>User Manual</div>
         </Button>
 
         {/* User Manual Modal */}
