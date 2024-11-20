@@ -18,6 +18,7 @@ module.exports = {
     new CopyWebpackPlugin({
       patterns: [
         { from: 'src/neco.png', to: 'dist/neco.png' },  // Adjust the path according to your structure
+        { from: 'src/preload.js', to: 'dist/preload.js' },  // Adjust the path according to your structure
       ],
     }),
   ],
