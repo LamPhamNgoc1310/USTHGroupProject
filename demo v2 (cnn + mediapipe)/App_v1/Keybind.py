@@ -27,7 +27,7 @@ def activateShortcut(pred_output, count, activationTime, shorcutDict):
     for key, value in shortcutDict.items():
         if key == pred_output:
             if pred_output == 'F' or pred_output == 'B':
-                if count % (acitivationTime/2) == 0:
+                if count % (activationTime/2) == 0:
                     hotkey(*value)
             
             elif pred_output == 'A' or pred_output == 'Y':
