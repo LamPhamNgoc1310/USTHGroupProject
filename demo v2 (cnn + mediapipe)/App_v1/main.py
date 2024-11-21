@@ -25,6 +25,10 @@ labels = ['A', 'B', 'F', 'L', 'W', 'Y']
 pred_output = ''
 cLevel = 0
 
+#Shortcut Database
+shortcutFile = 'shortcuts.txt'
+shortcutDict =  loadShortcut(shortcutFile)
+
 # Function to perform prediction 
 def pred(img, labels: list, model, unknownThresh=0.97):
     global pred_output, cLevel
