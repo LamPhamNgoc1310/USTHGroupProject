@@ -7,7 +7,7 @@ from threading import Thread
 from mediapipe.python.solutions import hands, drawing_utils
 from pygrabber.dshow_graph import FilterGraph
 from To_npArray import img_to_npArray
-from Keybind import activateShortcut
+from Keybind import *
 from base64 import b64encode
 from zmq import Context, PUB
 
@@ -106,13 +106,13 @@ def main():
                 cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
                 if (key_thread is None) or (not key_thread.is_alive()):
                     # print("Starting key thread")
-                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,))
+                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,shortcutDict,))
                     key_thread.start()
         else:
             count = 0
         prev_pred_output = pred_output
 
-        cTime = time()
+        cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
         # hiển thị fps
@@ -123,9 +123,10 @@ def main():
         # Encode the frame to Base64
         _, buffer = cv2.imencode('.jpg', output)
         frame_base64 = b64encode(buffer).decode('utf-8')
-    
+
         # Send the frame
         socket.send_string(frame_base64)
+
         
         
         cv2.imshow('Img', output)
