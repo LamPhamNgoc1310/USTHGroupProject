@@ -8,6 +8,13 @@ from mediapipe.python.solutions import hands, drawing_utils
 from pygrabber.dshow_graph import FilterGraph
 from To_npArray import img_to_npArray
 from Keybind import activateShortcut
+from base64 import b64encode
+from zmq import Context, PUB
+
+# Setup ZeroMQ to stream frames
+context = Context()
+socket = context.socket(PUB)
+socket.bind("tcp://*:5555")
 
 mpHands = hands
 mp_drawing = drawing_utils 
@@ -108,8 +115,17 @@ def main():
         cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
         # hiển thị pred label và confidence level
         cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
+        
+        # Encode the frame to Base64
+        _, buffer = cv2.imencode('.jpg', output)
+        frame_base64 = b64encode(buffer).decode('utf-8')
+    
+        # Send the frame
+        socket.send_string(frame_base64)
+        
+        
         cv2.imshow('Img', output)
-        cv2.waitKey(1)
+        # cv2.waitKey(1)
 
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
