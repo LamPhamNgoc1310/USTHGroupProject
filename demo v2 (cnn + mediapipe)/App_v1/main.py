@@ -7,6 +7,7 @@ from threading import Thread
 from mediapipe.python.solutions import hands, drawing_utils
 from To_npArray import img_to_npArray
 from Keybind import activateShortcut, loadShortcut, getShortcutAPI
+from flask import Flask
 
 app = Flask(__name__)
 mpHands = hands
@@ -61,7 +62,7 @@ def main():
     #         print("----------")
             
     flask_thread = Thread(target=runFlask)
-    flask_thead.daemon = True
+    flask_thread.daemon = True
     flask_thread.start()
     
     
@@ -129,5 +130,4 @@ def main():
 
 
 if __name__ == '__main__':
-    flask_threading
     main()
