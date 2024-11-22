@@ -1,5 +1,7 @@
 from pyautogui import hotkey
 import time
+from flask import jsonify
+
 
 def loadShortcut(filename):
     shortcut_dict = {}
@@ -11,16 +13,26 @@ def loadShortcut(filename):
                 shortcut_dict[key] = value.split(',')
 
     return shortcut_dict
+
         
 shortcutFile = 'shortcuts.txt'
 shortcutDict =  loadShortcut(shortcutFile)
+
+
+# Function to covert dict to json 
+def getShortcutsAPI():
+    try:
+        return jsonify(shortcutDict)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 
 def printShortcut(shortcut_dict):
     print("Shortcut Dictionary:")
     for key, value in shortcutDict.items():
         print(f"{key}: {value}")
 
-printShortcut(shortcutFile)
+
 
 # Function to activate shortcut
 def activateShortcut(pred_output, count, activationTime, shorcutDict):
@@ -36,7 +48,7 @@ def activateShortcut(pred_output, count, activationTime, shorcutDict):
             else:
                 hotkey(*value)
 
-
+# Function add shortcut (still in progress...)
 def addShortcut(filename):
     
     dataset = loadShortcut(shortcutFile)
@@ -54,5 +66,3 @@ def addShortcut(filename):
     with open(filename, 'a') as file:
         file.write(f'{label}:{shortcut_str}\n')
 
-
-addShortcut(shortcutFile)

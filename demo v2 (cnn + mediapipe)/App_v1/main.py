@@ -5,7 +5,6 @@ from pyautogui import hotkey
 from tensorflow.keras.models import load_model
 from threading import Thread
 from mediapipe.python.solutions import hands, drawing_utils
-from pygrabber.dshow_graph import FilterGraph
 from To_npArray import img_to_npArray
 from Keybind import *
 from base64 import b64encode
@@ -16,6 +15,7 @@ context = Context()
 socket = context.socket(PUB)
 socket.bind("tcp://*:5555")
 
+app = Flask(__name__)
 mpHands = hands
 mp_drawing = drawing_utils 
 hands = mpHands.Hands()
@@ -25,9 +25,11 @@ labels = ['A', 'B', 'F', 'L', 'W', 'Y']
 pred_output = ''
 cLevel = 0
 
-#Shortcut Database
+#Load shortcut Database
 shortcutFile = 'shortcuts.txt'
 shortcutDict =  loadShortcut(shortcutFile)
+
+loadShortcut(shortcutFile)
 
 # Function to perform prediction 
 def pred(img, labels: list, model, unknownThresh=0.97):
@@ -41,11 +43,12 @@ def pred(img, labels: list, model, unknownThresh=0.97):
     cLevel = np.ceil(pred[0][max_position] * 100) / 100
     
 
-# Function to list all the available camera sources
-# def list_cameras():
-#     graph = FilterGraph()
-#     devices = graph.get_input_devices()
-#     return devices
+@app.route('/shortcuts', methods=['GET'])
+def getShortcut():
+    return getShortcutAPI()
+
+def runFlask():
+    app.run(debug=True, use_reloader=False)
 
 def main():
     # User will input this on the UI
@@ -64,8 +67,9 @@ def main():
     #         print(e)
     #         print("----------")
             
-    
-    
+    flask_thread = Thread(target=runFlask)
+    flask_thead.daemon = True
+    flask_thread.start()
     
     
     cap = cv2.VideoCapture(0)
@@ -106,7 +110,7 @@ def main():
                 cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
                 if (key_thread is None) or (not key_thread.is_alive()):
                     # print("Starting key thread")
-                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,shortcutDict,))
+                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,))
                     key_thread.start()
         else:
             count = 0
@@ -142,4 +146,5 @@ def main():
 
 
 if __name__ == '__main__':
+    flask_threading
     main()
