@@ -1,0 +1,50 @@
+from mediapipe.python.solutions import hands, drawing_utils
+import numpy as np
+from FrameUpdate import extract_feature_vid
+
+# Function to convert image/frame to numpy array
+def img_to_npArray(img, draw: bool, mpHands, mp_drawing):
+    (wristX, wristY, wristZ,
+        thumb_CmcX, thumb_CmcY, thumb_CmcZ,
+        thumb_McpX, thumb_McpY, thumb_McpZ,
+        thumb_IpX, thumb_IpY, thumb_IpZ,
+        thumb_TipX, thumb_TipY, thumb_TipZ,
+        index_McpX, index_McpY, index_McpZ,
+        index_PipX, index_PipY, index_PipZ,
+        index_DipX, index_DipY, index_DipZ,
+        index_TipX, index_TipY, index_TipZ,
+        middle_McpX, middle_McpY, middle_McpZ,
+        middle_PipX, middle_PipY, middle_PipZ,
+        middle_DipX, middle_DipY, middle_DipZ,
+        middle_TipX, middle_TipY, middle_TipZ,
+        ring_McpX, ring_McpY, ring_McpZ,
+        ring_PipX, ring_PipY, ring_PipZ,
+        ring_DipX, ring_DipY, ring_DipZ,
+        ring_TipX, ring_TipY, ring_TipZ,
+        pinky_McpX, pinky_McpY, pinky_McpZ,
+        pinky_PipX, pinky_PipY, pinky_PipZ,
+        pinky_DipX, pinky_DipY, pinky_DipZ,
+        pinky_TipX, pinky_TipY, pinky_TipZ,
+        output) = extract_feature_vid(img, draw, mpHands, mp_drawing)
+    
+    return output, np.array([[[wristX], [wristY], [wristZ],
+                                [thumb_CmcX], [thumb_CmcY], [thumb_CmcZ],
+                                [thumb_McpX], [thumb_McpY], [thumb_McpZ],
+                                [thumb_IpX], [thumb_IpY], [thumb_IpZ],
+                                [thumb_TipX], [thumb_TipY], [thumb_TipZ],
+                                [index_McpX], [index_McpY], [index_McpZ],
+                                [index_PipX], [index_PipY], [index_PipZ],
+                                [index_DipX], [index_DipY], [index_DipZ],
+                                [index_TipX], [index_TipY], [index_TipZ],
+                                [middle_McpX], [middle_McpY], [middle_McpZ],
+                                [middle_PipX], [middle_PipY], [middle_PipZ],
+                                [middle_DipX], [middle_DipY], [middle_DipZ],
+                                [middle_TipX], [middle_TipY], [middle_TipZ],
+                                [ring_McpX], [ring_McpY], [ring_McpZ],
+                                [ring_PipX], [ring_PipY], [ring_PipZ],
+                                [ring_DipX], [ring_DipY], [ring_DipZ],
+                                [ring_TipX], [ring_TipY], [ring_TipZ],
+                                [pinky_McpX], [pinky_McpY], [pinky_McpZ],
+                                [pinky_PipX], [pinky_PipY], [pinky_PipZ],
+                                [pinky_DipX], [pinky_DipY], [pinky_DipZ],
+                                [pinky_TipX], [pinky_TipY], [pinky_TipZ]]])
