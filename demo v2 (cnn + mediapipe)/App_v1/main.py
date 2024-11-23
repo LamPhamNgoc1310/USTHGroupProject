@@ -116,7 +116,7 @@ def main():
                 cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
                 if (key_thread is None) or (not key_thread.is_alive()):
                     # print("Starting key thread")
-                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,))
+                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,shortcutDict))
                     key_thread.start()
         else:
             count = 0

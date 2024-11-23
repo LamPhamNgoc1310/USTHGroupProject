@@ -17,4 +17,3 @@ def getCameraSourceAPI():
     cameras = list_cameras()
     camera_list = [{'id': i, 'name': camera} for i, camera in enumerate(cameras)]
     return jsonify(camera_list)
-
