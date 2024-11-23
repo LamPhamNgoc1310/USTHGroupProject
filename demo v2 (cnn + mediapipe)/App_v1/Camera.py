@@ -1,4 +1,4 @@
-import pythoncom
+import pythoncom    # pip install pywin32
 from pygrabber.dshow_graph import FilterGraph
 from flask import jsonify
 
