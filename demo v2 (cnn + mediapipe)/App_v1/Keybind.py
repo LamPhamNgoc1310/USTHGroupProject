@@ -20,7 +20,7 @@ shortcutDict =  loadShortcut(shortcutFile)
 
 
 # Function to covert dict to json 
-def getShortcutsAPI():
+def getShortcutAPI():
     try:
         return jsonify(shortcutDict)
     except Exception as e:
@@ -35,7 +35,7 @@ def printShortcut(shortcut_dict):
 
 
 # Function to activate shortcut
-def activateShortcut(pred_output, count, activationTime, shorcutDict):
+def activateShortcut(pred_output, count, activationTime, shortcutDict):
     for key, value in shortcutDict.items():
         if key == pred_output:
             if pred_output == 'F' or pred_output == 'B':
@@ -65,4 +65,3 @@ def addShortcut(filename):
     
     with open(filename, 'a') as file:
         file.write(f'{label}:{shortcut_str}\n')
-

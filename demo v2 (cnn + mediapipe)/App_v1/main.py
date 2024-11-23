@@ -9,6 +9,8 @@ from To_npArray import img_to_npArray
 from Keybind import *
 from base64 import b64encode
 from zmq import Context, PUB
+from Camera import *
+from flask import Flask
 
 # Setup ZeroMQ to stream frames
 context = Context()
@@ -47,6 +49,10 @@ def pred(img, labels: list, model, unknownThresh=0.97):
 def getShortcut():
     return getShortcutAPI()
 
+@app.route('/camera_sources', methods=['GET'])
+def getCameraSource():
+    return getCameraSourceAPI()
+
 def runFlask():
     app.run(debug=True, use_reloader=False)
 
@@ -68,7 +74,7 @@ def main():
     #         print("----------")
             
     flask_thread = Thread(target=runFlask)
-    flask_thead.daemon = True
+    flask_thread.daemon = True
     flask_thread.start()
     
     
@@ -110,7 +116,7 @@ def main():
                 cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
                 if (key_thread is None) or (not key_thread.is_alive()):
                     # print("Starting key thread")
-                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,))
+                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,shortcutDict))
                     key_thread.start()
         else:
             count = 0
@@ -146,5 +152,4 @@ def main():
 
 
 if __name__ == '__main__':
-    flask_threading
     main()
