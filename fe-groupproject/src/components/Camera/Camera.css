@@ -19,11 +19,17 @@
     height: 100%;
 }
 
+.button-container {
+    display: flex;
+    flex-direction: column;
+}
+
 .record-button {
     /* min-width: 80%; */
     text-overflow: hidden;
     border: 1px solid black;
 }
+
 
 .btn-text {
     width: 3.8em;
