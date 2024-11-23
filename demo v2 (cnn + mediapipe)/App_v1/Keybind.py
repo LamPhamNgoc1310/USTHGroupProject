@@ -20,7 +20,7 @@ shortcutDict =  loadShortcut(shortcutFile)
 
 
 # Function to covert dict to json 
-def getShortcutsAPI():
+def getShortcutAPI():
     try:
         return jsonify(shortcutDict)
     except Exception as e:
