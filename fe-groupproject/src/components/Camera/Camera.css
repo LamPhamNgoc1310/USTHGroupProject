@@ -15,8 +15,9 @@
 }
 
 .video-container .video {
-    width: 100%;
-    height: 100%;
+    width: 100%;  /* Ensure the video takes up available space */
+    height: auto;
+    max-width: 100%;
 }
 
 .button-container {
