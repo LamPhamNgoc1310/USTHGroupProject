@@ -1,13 +1,47 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, dialog } = require('electron');
 const fs = require("fs");
-const path = require('node:path');
+const path = require('path');
+const { spawn } = require("child_process");
+const zmq = require('zeromq');
 
+// Global variables
 let mainWindow;
 let tray;
+let pythonProcess;
+
+// Initialize ZeroMQ socket to send frames to Camera
+const socket = new zmq.Subscriber(); // Creating a subscriber socket
+socket.connect('tcp://localhost:5555'); // Connect to the ZeroMQ server
+socket.subscribe(''); // Subscribe to all messages
+
+// ZeroMQ message listener using async iteration
+const listenForFrames = async () => {
+  for await (const [msg] of socket) {
+    // Send the message (frame) to the renderer process
+    if (mainWindow) {
+      mainWindow.webContents.send('frame-data', msg.toString('utf-8'));
+    }
+  }
+};
+
+// Start listening for frames
+listenForFrames().catch((err) => {
+  console.error("Error listening for frames:", err);
+});
+
 
 // Handle saving the video file
 ipcMain.on("save-video", async (event, buffer) => {
   try {
+    // Send the save-video command with base64-encoded buffer to Python
+    pythonProcess.stdin.write(JSON.stringify({ type: "save-video", data: buffer }) + "\n");
+
+    // Simulating a response from Python
+    pythonProcess.stdout.once("data", (response) => {
+      const responseData = JSON.parse(response);
+      event.reply("save-video-reply", responseData);  // Return success/failure to renderer
+    });
+
     const { canceled, filePath } = await dialog.showSaveDialog({
       title: "Save Video",
       defaultPath: path.join(app.getPath("downloads"), "recorded-video.webm"),
@@ -50,7 +84,7 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-// Create main window
+// Create Main Window
 const createWindow = () => {
   console.log('Creating window...');
   mainWindow = new BrowserWindow({
@@ -80,32 +114,51 @@ const createWindow = () => {
   });
 };
 
+// Create Tray Icon
 const createTray = () => {
   const iconPath = path.join(__dirname, 'dist', 'neco.png'); // Path to neco.png
 
   try {
     tray = new Tray(iconPath); // We need an icon here :v
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open',
-      click: () => {
-        mainWindow.show();
-      }},
-    { label: 'Quit',
-      click: () => {
-        app.isQuitting = true;
-        tray.destroy();
-        app.quit();
-      }}
-  ]);
+    const contextMenu = Menu.buildFromTemplate([
+      { label: 'Open', click: () => { mainWindow.show(); }},
+      { label: 'Quit', click: () => { app.isQuitting = true; tray.destroy(); app.quit(); }}
+    ]);
 
-  tray.setContextMenu(contextMenu);
-  tray.setToolTip('HGFMP');
+    tray.setContextMenu(contextMenu);
+    tray.setToolTip('HGFMP');
   } catch (error) {
     console.error('Failed to load tray icon:', error);
   }
 };
 
+// Start the Python process
+const startPythonProcess = () => {
+  const pythonScriptPath = process.env.PYTHON_SCRIPT_PATH;
+
+  console.log('Python Script Path from Environment:', pythonScriptPath);
+
+  // Ensure the Python script is called correctly
+  const pythonProcess = spawn('python', [pythonScriptPath]);
+
+  // Capture the output from the Python script
+  pythonProcess.stdout.on('data', (data) => {
+    console.log(`Python script output: ${data.toString()}`);
+  });
+
+  // Capture any errors from the Python script
+  pythonProcess.stderr.on('data', (data) => {
+    console.error(`Python script error: ${data.toString()}`);
+  });
+
+  // Handle process completion
+  pythonProcess.on('close', (code) => {
+    console.log(`Python script finished with code ${code}`);
+  }); 
+};
+
 app.whenReady().then(() => {
+  startPythonProcess();
   createWindow();
   createTray();
 });
@@ -130,6 +183,7 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
+
 
 // console.log(path.join(__dirname, 'src', 'neco.png'));
 // mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {

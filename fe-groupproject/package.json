@@ -27,6 +27,7 @@
     "babel-loader": "^9.2.1",
     "css-loader": "^6.11.0",
     "electron": "^33.2.0",
+    "electron-rebuild": "^3.2.9",
     "electron-reload": "^2.0.0-alpha.1",
     "node-loader": "^2.0.0",
     "style-loader": "^3.3.4"
@@ -44,6 +45,7 @@
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router": "^6.27.0",
-    "react-router-dom": "^6.27.0"
+    "react-router-dom": "^6.27.0",
+    "zeromq": "^6.1.2"
   }
 }

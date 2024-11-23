@@ -1,0 +1,1 @@
+        # encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]  # Adjust the quality
