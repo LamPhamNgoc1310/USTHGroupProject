@@ -1,9 +1,35 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain, dialog } = require('electron');
 const fs = require("fs");
 const path = require('node:path');
+const WebSocket = require('ws');  // We use the ws library for WebSocket communication
+const { Buffer } = require('buffer');
 
 let mainWindow;
 let tray;
+
+// WebSocket connection setup for receiving frames
+const ws = new WebSocket('ws://localhost:8765'); // Connect to the Python WebSocket server
+
+ws.on('open', () => {
+  console.log("Connected to WebSocket server");
+});
+
+ws.on('message', (message) => {
+  console.log("Received frame:", message);  // Debugging the frame
+
+  // Each message will be a base64-encoded frame
+  if (mainWindow && mainWindow.webContents) {
+    mainWindow.webContents.send('frame', message);  // Send the frame to the renderer process
+  }
+});
+
+ws.on('close', () => {
+  console.log("WebSocket connection closed");
+});
+
+ws.on('error', (error) => {
+  console.error("WebSocket error:", error);
+});
 
 // Handle saving the video file
 ipcMain.on("save-video", async (event, buffer) => {
@@ -22,7 +48,7 @@ ipcMain.on("save-video", async (event, buffer) => {
     fs.writeFile(filePath, buffer, (err) => {
       if (err) {
         console.error("Failed to save video file:", err);
-        dialog.showErrorBox('Save Video Failed', `Error: ${err.message}`);  // Error dialog for the user
+        dialog.showErrorBox('Save Video Failed', `Error: ${err.message}`);
         event.reply("save-video-reply", { success: false, error: err.message });
       } else {
         console.log("Video saved successfully to:", filePath);
@@ -31,7 +57,7 @@ ipcMain.on("save-video", async (event, buffer) => {
     });
   } catch (error) {
     console.error("Error during save dialog:", error);
-    dialog.showErrorBox('Save Video Failed', `Error: ${error.message}`);  // Error dialog for the user
+    dialog.showErrorBox('Save Video Failed', `Error: ${error.message}`);
     event.reply("save-video-reply", { success: false, error: error.message });
   }
 });

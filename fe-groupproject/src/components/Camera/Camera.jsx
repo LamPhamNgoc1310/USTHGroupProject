@@ -10,35 +10,43 @@ function Camera() {
   const [time, setTime] = useState(0);
   const [isSaveModalOpen, setIsSaveModalOpen] = useState(false); // Save Modal state
 
-  const videoRef = useRef(null);
+  const videoRef = useRef(null); 
   const mediaRecorder = useRef(null);
   const recordedChunks = useRef([]);
 
-  // Start video stream from the user's camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
+  const socketRef = useRef(null); // WebSocket reference
+  const [frame, setFrame] = useState(null); // To store the latest frame
+
+  // Start receiving frames from the WebSocket stream
+  useEffect(() => {
+    // Establish WebSocket connection
+    socketRef.current = new WebSocket("ws://localhost:8765");
+
+    // Handle incoming frames
+    socketRef.current.onmessage = (event) => {
+      console.log("Received frame:", event.data);  // Log the data to debug
+      try {
+        setFrame('data:image/jpeg;base64,' + event.data); // Update the frame
+      } catch {
+        console.error("Error processing frame:", error);
       }
-      mediaRecorder.current = new MediaRecorder(stream, { mimeType: "video/webm" });
+    };
+    
+    socketRef.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
-      mediaRecorder.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunks.current.push(event.data);
-        }
-      };
+    socketRef.current.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
 
-      mediaRecorder.current.onstop = () => {
-        // Show the confirmation modal when recording stops
-        setIsSaveModalOpen(true);
-      };
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      alert("Failed to access the camera. Please check your camera permissions.");
-    }
-  };
+    // Cleanup when component unmounts
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -63,11 +71,24 @@ function Camera() {
 
   // Start recording
   const handleStartRecording = () => {
-    if (mediaRecorder.current) {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject;
+      const options = { mimeType: 'video/webm' };
+      mediaRecorder.current = new MediaRecorder(stream, options);
+  
+      mediaRecorder.current.ondataavailable = (event) => {
+        recordedChunks.current.push(event.data);
+      };
+  
+      mediaRecorder.current.onstop = () => {
+        console.log("Recording stopped.");
+        setIsSaveModalOpen(true);
+      };
+  
       setRecording(true);
       mediaRecorder.current.start();
     } else {
-      console.error("MediaRecorder not initialized");
+      console.error("Camera not initialized.");
     }
   };
 
@@ -81,43 +102,28 @@ function Camera() {
     }
   };
 
-  // Start the camera when the component mounts
-  useEffect(() => {
-    startCamera();
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
-      }
-    };
-  }, []);
+  // Handle user manual modal visibility
+  const handleUserManualModal = (open) => {
+    setIsUserManualOpen(open);
+  };
 
-  // Handle user manual modal
+  // Handle save modal visibility
   const handleSaveModal = async (confirm) => {
     if (!confirm) {
-      // If the user cancels, simply close the modal
       setIsSaveModalOpen(false);
-      console.log("User canceled saving.");
-      return; // Don't proceed with save logic
+      return; // User canceled
     }
   
-    // Proceed with saving if the user confirms
-    setIsSaveModalOpen(false); // Close the modal immediately after confirming
-  
+    setIsSaveModalOpen(false); // Close modal
+    
     try {
-      // Combine the recorded chunks into a single Blob
       const blob = new Blob(recordedChunks.current, { type: "video/webm" });
-      recordedChunks.current = [];
+      recordedChunks.current = [];  // Clear recorded chunks
   
-      // Await the arrayBuffer before passing to Buffer.from
-      const arrayBuffer = await blob.arrayBuffer(); // Await the Promise
-      const buffer = Buffer.from(arrayBuffer); // Now Buffer.from() receives a valid argument
-  
-      // Send the video buffer to the main process
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
       ipcRenderer.send("save-video", buffer);
   
-      // Handle the save response
       ipcRenderer.once("save-video-reply", (event, response) => {
         if (response.success) {
           console.log("Video saved successfully.");
@@ -130,12 +136,14 @@ function Camera() {
     }
   };
   
+  
 
   return (
     <div className="camera-container">
       <div className="camera-select"></div>
       <div className="video-container">
-        <video ref={videoRef} autoPlay muted className="video"></video>
+        {/* If a frame is received, show it as an image */}
+        {frame && <img id="videoStream" src={frame} alt="Live Stream" className="video" />}
       </div>
 
       <div className="button-container">

@@ -8,3 +8,4 @@ contextBridge.exposeInMainWorld("electron", {
   onSaveVideoReply: (callback) =>
     ipcRenderer.on("save-video-reply", (event, response) => callback(response)),
 });
+
