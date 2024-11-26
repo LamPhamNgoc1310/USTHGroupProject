@@ -1,21 +1,17 @@
-import numpy as np
+import asyncio
+import websockets
 import cv2
-from time import time
-from pyautogui import hotkey
-from tensorflow.keras.models import load_model
-from threading import Thread
-from mediapipe.python.solutions import hands, drawing_utils
-from To_npArray import img_to_npArray
-from Keybind import *
 from base64 import b64encode
-from zmq import Context, PUB
+import numpy as np
+from time import time
+from tensorflow.keras.models import load_model
+from threading import Thread, Lock
+from mediapipe.python.solutions import hands, drawing_utils
+from FrameUpdate import *
+from Keybind import *
 from Camera import *
 from flask import Flask
-
-# Setup ZeroMQ to stream frames
-context = Context()
-socket = context.socket(PUB)
-socket.bind("tcp://*:5555")
+import logging
 
 app = Flask(__name__)
 mpHands = hands
@@ -31,18 +27,27 @@ cLevel = 0
 shortcutFile = 'shortcuts.txt'
 shortcutDict =  loadShortcut(shortcutFile)
 
-loadShortcut(shortcutFile)
+# loadShortcut(shortcutFile)
+
+# Setup logging for better debugging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+# Lock for managing thread-safe operations
+pred_lock = Lock()
 
 # Function to perform prediction 
 def pred(img, labels: list, model, unknownThresh=0.97):
     global pred_output, cLevel
     
-    pred = model.predict(img, verbose=0)
-    max_position = np.argmax(pred)
-    pred_output = labels[max_position]
-    if pred[0][max_position] < unknownThresh: 
-        pred_output = 'unknown gesture'
-    cLevel = np.ceil(pred[0][max_position] * 100) / 100
+    # Perform prediction in a thread-safe manner
+    with pred_lock:
+        pred = model.predict(img, verbose=0)
+        max_position = np.argmax(pred)
+        pred_output = labels[max_position]
+        if pred[0][max_position] < unknownThresh: 
+            pred_output = 'unknown gesture'
+        cLevel = np.ceil(pred[0][max_position] * 100) / 100
     
 
 @app.route('/shortcuts', methods=['GET'])
@@ -52,6 +57,99 @@ def getShortcut():
 @app.route('/camera_sources', methods=['GET'])
 def getCameraSource():
     return getCameraSourceAPI()
+
+# WebSocket Server to send frames
+async def send_video(websocket):
+    cap = cv2.VideoCapture(0)
+    if not cap.isOpened():
+        logger.error("Error: Unable to open the camera.")
+        return
+
+    target_fps = 11  # Desired frames per second
+    frame_duration = 1.0 / target_fps  # Duration of each frame in seconds
+
+    wCam, hCam = 640, 480
+    cap.set(3, wCam)
+    cap.set(4, hCam)
+
+    # detector = htm.handDetector(maxHands=1)
+
+    pred_thread = None
+    key_thread = None
+    unknownThresh = 0.97
+    prev_pred_output = ''
+    count = 0
+    pTime = 0
+    activationTime = 10
+    # frame_skip = 5  # Process every 5th frame
+
+    while True:
+        cTime = time.time()
+        success, img = cap.read()
+        if not success:
+            logger.error("Failed to capture frame")
+            break
+
+        output, input_IMG = img_to_npArray(img, draw=True, mpHands=mpHands, mp_drawing=mp_drawing)
+
+        if (pred_thread is None) or (not pred_thread.is_alive()):
+            # Start a new prediction thread
+            pred_thread = Thread(target=pred, args=(input_IMG, labels, model,unknownThresh))
+            pred_thread.start()
+
+        count += 1
+
+        if prev_pred_output != pred_output: count = 0
+
+        if count >= activationTime and pred_output != "unknown gesture":
+            cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            # activateShortcut(pred_output, count, activationTime,shortcutDict)
+            if (key_thread is None) or (not key_thread.is_alive()):
+                    # Start a new keybinding activation thread
+                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime, shortcutDict))
+                    key_thread.start()
+
+        prev_pred_output = pred_output
+
+        fps = 1 / (cTime - pTime)
+        pTime = cTime
+        cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
+        cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
+
+        # Encode the frame to JPEG
+        # _, buffer = cv2.imencode('.jpg', output)
+        # frame_base64 = b64encode(buffer).decode('utf-8')
+
+        cv2.imshow('Img', output)
+
+        # Calculate the time taken to process the frame
+        elapsed_time = time.time() - cTime
+        remaining_time = frame_duration - elapsed_time
+
+        # Introduce a delay to maintain the target FPS
+        if remaining_time > 0:
+            time.sleep(remaining_time)
+        
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+        
+        # Send frame only if it's time for this frame to be processed
+
+        _, buffer = cv2.imencode('.jpg', output)
+        frame_base64 = b64encode(buffer).decode('utf-8')
+
+        try:
+            await websocket.send(frame_base64)
+        except websockets.exceptions.ConnectionClosed:
+            logger.error("WebSocket connection closed unexpectedly")
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
+
+async def start_websocket_server():
+    server = await websockets.serve(send_video, "localhost", 8765)
+    await server.wait_closed()
 
 def runFlask():
     app.run(debug=True, use_reloader=False)
@@ -76,79 +174,9 @@ def main():
     flask_thread = Thread(target=runFlask)
     flask_thread.daemon = True
     flask_thread.start()
-    
-    
-    cap = cv2.VideoCapture(0)
-    if cap is None or not cap.isOpened():
-        print ('Warning: unable to open video source ')
-        return
-    
-    
-    
-    wCam, hCam = 640, 480
-    cap.set(3, wCam)
-    cap.set(4, hCam)
 
-    # detector = htm.handDetector(maxHands=1)
-    
-    pred_thread = None
-    key_thread = None
-    unknownThresh = 0.97
-    prev_pred_output = ''
-    count = 0
-    pTime = 0
-    activationTime = 10
-
-
-    while True:
-        success, img = cap.read()
-        output, input_IMG = img_to_npArray(img, draw=True, mpHands=mpHands, mp_drawing=mp_drawing)
-
-        if (pred_thread is None) or (not pred_thread.is_alive()):
-            # print("Starting prediction thread")
-            pred_thread = Thread(target=pred, args=(input_IMG, labels, model,))
-            pred_thread.start()
-
-
-        if prev_pred_output == pred_output:
-            count += 1
-            if count >= activationTime:
-                cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-                if (key_thread is None) or (not key_thread.is_alive()):
-                    # print("Starting key thread")
-                    key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime,shortcutDict))
-                    key_thread.start()
-        else:
-            count = 0
-        prev_pred_output = pred_output
-
-        cTime = time.time()
-        fps = 1 / (cTime - pTime)
-        pTime = cTime
-        # hiển thị fps
-        cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
-        # hiển thị pred label và confidence level
-        cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
-        
-        # Encode the frame to Base64
-        _, buffer = cv2.imencode('.jpg', output)
-        frame_base64 = b64encode(buffer).decode('utf-8')
-
-        # Send the frame
-        socket.send_string(frame_base64)
-
-        
-        
-        cv2.imshow('Img', output)
-        # cv2.waitKey(1)
-
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-
-        # time.sleep(0.1)  # Add a short delay to reduce the frequency of thread creation
-
-    cap.release()
-    cv2.destroyAllWindows()
+    # Start the WebSocket server
+    asyncio.get_event_loop().run_until_complete(start_websocket_server())
 
 
 if __name__ == '__main__':
