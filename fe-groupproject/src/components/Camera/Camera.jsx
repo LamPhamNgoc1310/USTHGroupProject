@@ -1,59 +1,52 @@
-// TODO:
-// run in background
-// accessing local config files using FileReader(), note: must add a function to read auto
-
 import React, { useState, useEffect, useRef } from "react";
-import { Button, Modal} from "antd";
+import { Button, Modal } from "antd";
 import "./Camera.css";
 
-const { ipcRenderer } = window.require('electron')
+const { ipcRenderer } = window.require('electron');
 
 function Camera() {
   const [recording, setRecording] = useState(false);
-  const [isUserManualOpen, setIsUserManualOpen] = useState(false); // User Manual modal state
+  const [isUserManualOpen, setIsUserManualOpen] = useState(false);
   const [time, setTime] = useState(0);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false); // Save Modal state
 
-  const videoRef = useRef(null);
+  const videoRef = useRef(null); 
   const mediaRecorder = useRef(null);
   const recordedChunks = useRef([]);
 
-   // Start video stream from the user's camera
-  const startCamera = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoRef.current.srcObject = stream;
-      videoRef.current.play();
-      mediaRecorder.current = new MediaRecorder(stream, { mimeType: "video/webm" });
+  const socketRef = useRef(null); // WebSocket reference
+  const [frame, setFrame] = useState(null); // To store the latest frame
 
-      mediaRecorder.current.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          recordedChunks.current.push(event.data);
-        }
-      };
+  // Start receiving frames from the WebSocket stream
+  useEffect(() => {
+    // Establish WebSocket connection
+    socketRef.current = new WebSocket("ws://localhost:8765");
 
-      mediaRecorder.current.onstop = async () => {
-        // Combine chunks into a single Blob
-        const blob = new Blob(recordedChunks.current, { type: "video/webm" });
-        recordedChunks.current = [];
+    // Handle incoming frames
+    socketRef.current.onmessage = (event) => {
+      console.log("Received frame:", event.data);  // Log the data to debug
+      try {
+        setFrame('data:image/jpeg;base64,' + event.data); // Update the frame
+      } catch {
+        console.error("Error processing frame:", error);
+      }
+    };
+    
+    socketRef.current.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
-        // Convert blob to buffer and send to main process for saving
-        const buffer = Buffer.from(await blob.arrayBuffer());
-        ipcRenderer.send("save-video", buffer); // Send the video buffer to the main process
+    socketRef.current.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
 
-        // Handle the save response
-        ipcRenderer.once("save-video-reply", (event, response) => {
-          if (response.success) {
-            console.log("Video saved successfully.");
-          } else {
-            console.error("Failed to save video:", response.error);
-          }
-        });
-      };
-    } catch (error) {
-      console.error("Error accessing camera:", error);
-      alert("Failed to access the camera. Please check your camera permissions.");
-    }
-  };
+    // Cleanup when component unmounts
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -68,19 +61,34 @@ function Camera() {
     return () => clearInterval(timer); // Cleanup the interval when the component unmounts
   }, [recording]);
 
-  
+  // Format time for the display
   const formatTime = (time) => {
     const hours = Math.floor(time / 3600);
-    const minutes = Math.floor((time % 3600)/60);
+    const minutes = Math.floor((time % 3600) / 60);
     const seconds = time % 60;
-    return `${hours.toString().padStart(2,"0")}:${minutes.toString().padStart(2,"0")}:${seconds.toString().padStart(2,"0")}`
-  }
+    return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   // Start recording
   const handleStartRecording = () => {
-    if (mediaRecorder.current) {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const stream = videoRef.current.srcObject;
+      const options = { mimeType: 'video/webm' };
+      mediaRecorder.current = new MediaRecorder(stream, options);
+  
+      mediaRecorder.current.ondataavailable = (event) => {
+        recordedChunks.current.push(event.data);
+      };
+  
+      mediaRecorder.current.onstop = () => {
+        console.log("Recording stopped.");
+        setIsSaveModalOpen(true);
+      };
+  
       setRecording(true);
       mediaRecorder.current.start();
+    } else {
+      console.error("Camera not initialized.");
     }
   };
 
@@ -89,49 +97,63 @@ function Camera() {
     if (mediaRecorder.current) {
       setRecording(false);
       mediaRecorder.current.stop();
+    } else {
+      console.error("MediaRecorder not initialized");
     }
   };
 
-  // Start the camera when the component mounts
-  React.useEffect(() => {
-    startCamera();
-    return () => {
-      if (videoRef.current && videoRef.current.srcObject) {
-        const stream = videoRef.current.srcObject;
-        const tracks = stream.getTracks();
-        tracks.forEach((track) => track.stop());
-      }
-    };
-  }, []);
+  // Handle user manual modal visibility
+  const handleUserManualModal = (open) => {
+    setIsUserManualOpen(open);
+  };
 
-  // Handle modal open/close for User Manual
-  const handleUserManualModal = (open) => setIsUserManualOpen(open);
+  // Handle save modal visibility
+  const handleSaveModal = async (confirm) => {
+    if (!confirm) {
+      setIsSaveModalOpen(false);
+      return; // User canceled
+    }
+  
+    setIsSaveModalOpen(false); // Close modal
+    
+    try {
+      const blob = new Blob(recordedChunks.current, { type: "video/webm" });
+      recordedChunks.current = [];  // Clear recorded chunks
+  
+      const arrayBuffer = await blob.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      ipcRenderer.send("save-video", buffer);
+  
+      ipcRenderer.once("save-video-reply", (event, response) => {
+        if (response.success) {
+          console.log("Video saved successfully.");
+        } else {
+          console.error("Failed to save video:", response.error);
+        }
+      });
+    } catch (error) {
+      console.error("Error while saving the video:", error);
+    }
+  };
+  
+  
 
   return (
     <div className="camera-container">
-
       <div className="camera-select"></div>
-
       <div className="video-container">
-        <video ref={videoRef} autoPlay muted className="video"></video>
+        {/* If a frame is received, show it as an image */}
+        {frame && <img id="videoStream" src={frame} alt="Live Stream" className="video" />}
       </div>
 
       <div className="button-container">
         {/* Recording Button */}
         {recording ? (
-          <Button
-            className="stop-button"
-            type="primary"
-            onClick={handleStopRecording}
-          >
+          <Button className="stop-button" type="primary" onClick={handleStopRecording}>
             <span className="btn-text">Stop Recording</span>
           </Button>
         ) : (
-          <Button
-            className="record-button"
-            type="primary"
-            onClick={handleStartRecording}
-          >
+          <Button className="record-button" type="primary" onClick={handleStartRecording}>
             <span className="btn-text">Record</span>
           </Button>
         )}
@@ -139,11 +161,7 @@ function Camera() {
         <span>{formatTime(time)}</span>
 
         {/* User Manual Button */}
-        <Button
-          className="manual-button"
-          type="link"
-          onClick={() => handleUserManualModal(true)}
-        >
+        <Button className="manual-button" type="link" onClick={() => handleUserManualModal(true)}>
           <div>User Manual</div>
         </Button>
 
@@ -166,10 +184,19 @@ function Camera() {
             <h2>2. Setting</h2>
             <li>Press "Open Keybind Setting" to open the setting</li>
             <li>The window is where you setup your keybinding</li>
-            <li>Labels can be asigned to a shortcut/key</li>
+            <li>Labels can be assigned to a shortcut/key</li>
           </ul>
         </Modal>
 
+        {/* Save Confirmation Modal */}
+        <Modal
+          title="Save Video"
+          open={isSaveModalOpen}
+          onOk={() => handleSaveModal(true)} // Confirm save
+          onCancel={() => handleSaveModal(false)} // Cancel save
+        >
+          <p>Do you want to save the recorded video?</p>
+        </Modal>
       </div>
     </div>
   );
