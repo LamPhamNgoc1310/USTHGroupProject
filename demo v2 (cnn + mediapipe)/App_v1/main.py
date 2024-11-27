@@ -4,13 +4,11 @@ import cv2
 from base64 import b64encode
 import numpy as np
 from time import time
-from pyautogui import hotkey
 from tensorflow.keras.models import load_model
 from threading import Thread, Lock
 from mediapipe.python.solutions import hands, drawing_utils
-from To_npArray import img_to_npArray
+from FrameUpdate import *
 from Keybind import *
-from base64 import b64encode
 from Camera import *
 from flask import Flask
 import logging
@@ -67,9 +65,12 @@ async def send_video(websocket):
         logger.error("Error: Unable to open the camera.")
         return
 
-    # wCam, hCam = 640, 480
-    # cap.set(3, wCam)
-    # cap.set(4, hCam)
+    target_fps = 11  # Desired frames per second
+    frame_duration = 1.0 / target_fps  # Duration of each frame in seconds
+
+    wCam, hCam = 640, 480
+    cap.set(3, wCam)
+    cap.set(4, hCam)
 
     # detector = htm.handDetector(maxHands=1)
 
@@ -80,9 +81,10 @@ async def send_video(websocket):
     count = 0
     pTime = 0
     activationTime = 10
-    frame_skip = 5  # Process every 5th frame
+    # frame_skip = 5  # Process every 5th frame
 
     while True:
+        cTime = time.time()
         success, img = cap.read()
         if not success:
             logger.error("Failed to capture frame")
@@ -90,26 +92,25 @@ async def send_video(websocket):
 
         output, input_IMG = img_to_npArray(img, draw=True, mpHands=mpHands, mp_drawing=mp_drawing)
 
-        # Process frames every frame_skip intervals
-        if count % frame_skip == 0:
-            if (pred_thread is None) or (not pred_thread.is_alive()):
-                # Start a new prediction thread
-                pred_thread = Thread(target=pred, args=(input_IMG, labels, model,))
-                pred_thread.start()
+        if (pred_thread is None) or (not pred_thread.is_alive()):
+            # Start a new prediction thread
+            pred_thread = Thread(target=pred, args=(input_IMG, labels, model,unknownThresh))
+            pred_thread.start()
 
-        if prev_pred_output == pred_output:
-            count += 1
-            if count >= activationTime:
-                cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-                if (key_thread is None) or (not key_thread.is_alive()):
+        count += 1
+
+        if prev_pred_output != pred_output: count = 0
+
+        if count >= activationTime and pred_output != "unknown gesture":
+            cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
+            # activateShortcut(pred_output, count, activationTime,shortcutDict)
+            if (key_thread is None) or (not key_thread.is_alive()):
                     # Start a new keybinding activation thread
                     key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime, shortcutDict))
                     key_thread.start()
-        else:
-            count = 0
+
         prev_pred_output = pred_output
 
-        cTime = time.time()
         fps = 1 / (cTime - pTime)
         pTime = cTime
         cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
@@ -121,20 +122,27 @@ async def send_video(websocket):
 
         cv2.imshow('Img', output)
 
+        # Calculate the time taken to process the frame
+        elapsed_time = time.time() - cTime
+        remaining_time = frame_duration - elapsed_time
+
+        # Introduce a delay to maintain the target FPS
+        if remaining_time > 0:
+            time.sleep(remaining_time)
         
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
         
         # Send frame only if it's time for this frame to be processed
-        if count % frame_skip == 0:
-            _, buffer = cv2.imencode('.jpg', output)
-            frame_base64 = b64encode(buffer).decode('utf-8')
 
-            try:
-                await websocket.send(frame_base64)
-            except websockets.exceptions.ConnectionClosed:
-                logger.error("WebSocket connection closed unexpectedly")
-                break
+        _, buffer = cv2.imencode('.jpg', output)
+        frame_base64 = b64encode(buffer).decode('utf-8')
+
+        try:
+            await websocket.send(frame_base64)
+        except websockets.exceptions.ConnectionClosed:
+            logger.error("WebSocket connection closed unexpectedly")
+            break
 
     cap.release()
     cv2.destroyAllWindows()

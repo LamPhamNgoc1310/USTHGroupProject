@@ -1,7 +1,20 @@
 import cv2
-from mediapipe.python.solutions import hands, drawing_utils
+import numpy as np
+# from mediapipe.python.solutions import hands, drawing_utils
 
-# Function to update the frame with hand's coordinate
+# # Function to perform prediction 
+# def pred(img, labels: list, model, unknownThresh=0.97) -> tuple[str, float]:
+    
+#     pred = model.predict(img, verbose=0)
+#     max_position = np.argmax(pred)
+#     pred_output = labels[max_position]
+#     if pred[0][max_position] < unknownThresh: 
+#         pred_output = 'unknown gesture'
+#     cLevel = np.ceil(pred[0][max_position] * 100) / 100
+#     return pred_output, cLevel
+
+
+# func trả về 1 đống toạ độ tay và ảnh được processed 
 def extract_feature_vid(input_image, draw: bool, mpHands, mp_drawing):
     image = input_image
     with mpHands.Hands(static_image_mode=True, max_num_hands=1, min_detection_confidence=0.1) as hands:
@@ -255,3 +268,51 @@ def extract_feature_vid(input_image, draw: bool, mpHands, mp_drawing):
                     pinky_DipX, pinky_DipY, pinky_DipZ,
                     pinky_TipX, pinky_TipY, pinky_TipZ,
                     annotated_image)
+
+
+# lấy toạ độ từ extract_feature_vid() trả về ảnh được processed và đổi toạ độ thành numpy array
+def img_to_npArray(img, draw: bool, mpHands, mp_drawing):
+    (wristX, wristY, wristZ,
+        thumb_CmcX, thumb_CmcY, thumb_CmcZ,
+        thumb_McpX, thumb_McpY, thumb_McpZ,
+        thumb_IpX, thumb_IpY, thumb_IpZ,
+        thumb_TipX, thumb_TipY, thumb_TipZ,
+        index_McpX, index_McpY, index_McpZ,
+        index_PipX, index_PipY, index_PipZ,
+        index_DipX, index_DipY, index_DipZ,
+        index_TipX, index_TipY, index_TipZ,
+        middle_McpX, middle_McpY, middle_McpZ,
+        middle_PipX, middle_PipY, middle_PipZ,
+        middle_DipX, middle_DipY, middle_DipZ,
+        middle_TipX, middle_TipY, middle_TipZ,
+        ring_McpX, ring_McpY, ring_McpZ,
+        ring_PipX, ring_PipY, ring_PipZ,
+        ring_DipX, ring_DipY, ring_DipZ,
+        ring_TipX, ring_TipY, ring_TipZ,
+        pinky_McpX, pinky_McpY, pinky_McpZ,
+        pinky_PipX, pinky_PipY, pinky_PipZ,
+        pinky_DipX, pinky_DipY, pinky_DipZ,
+        pinky_TipX, pinky_TipY, pinky_TipZ,
+        output) = extract_feature_vid(img, draw, mpHands, mp_drawing)
+    
+    return output, np.array([[[wristX], [wristY], [wristZ],
+                                [thumb_CmcX], [thumb_CmcY], [thumb_CmcZ],
+                                [thumb_McpX], [thumb_McpY], [thumb_McpZ],
+                                [thumb_IpX], [thumb_IpY], [thumb_IpZ],
+                                [thumb_TipX], [thumb_TipY], [thumb_TipZ],
+                                [index_McpX], [index_McpY], [index_McpZ],
+                                [index_PipX], [index_PipY], [index_PipZ],
+                                [index_DipX], [index_DipY], [index_DipZ],
+                                [index_TipX], [index_TipY], [index_TipZ],
+                                [middle_McpX], [middle_McpY], [middle_McpZ],
+                                [middle_PipX], [middle_PipY], [middle_PipZ],
+                                [middle_DipX], [middle_DipY], [middle_DipZ],
+                                [middle_TipX], [middle_TipY], [middle_TipZ],
+                                [ring_McpX], [ring_McpY], [ring_McpZ],
+                                [ring_PipX], [ring_PipY], [ring_PipZ],
+                                [ring_DipX], [ring_DipY], [ring_DipZ],
+                                [ring_TipX], [ring_TipY], [ring_TipZ],
+                                [pinky_McpX], [pinky_McpY], [pinky_McpZ],
+                                [pinky_PipX], [pinky_PipY], [pinky_PipZ],
+                                [pinky_DipX], [pinky_DipY], [pinky_DipZ],
+                                [pinky_TipX], [pinky_TipY], [pinky_TipZ]]])
