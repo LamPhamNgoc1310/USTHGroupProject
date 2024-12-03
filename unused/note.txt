@@ -1,0 +1,1 @@
+use this dir to store unused folders, making the main dir clean and efficiently managed
