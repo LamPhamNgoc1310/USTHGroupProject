@@ -1,76 +1,23 @@
-const { app, BrowserWindow, Tray, Menu, ipcMain, dialog } = require('electron');
-const fs = require("fs");
+const { app, BrowserWindow, Tray, Menu, ipcMain } = require('electron');
+const { spawn } = require("child_process");
+// const fs = require('fs');
 const path = require('node:path');
-const WebSocket = require('ws');  // We use the ws library for WebSocket communication
-const { Buffer } = require('buffer');
 
 let mainWindow;
 let tray;
+let flaskProcess; // To track the Flask server process
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
 
-// WebSocket connection setup for receiving frames
-const ws = new WebSocket('ws://localhost:8765'); // Connect to the Python WebSocket server
 
-ws.on('open', () => {
-  console.log("Connected to WebSocket server");
-});
-
-ws.on('message', (message) => {
-  console.log("Received frame:", message);  // Debugging the frame
-
-  // Each message will be a base64-encoded frame
-  if (mainWindow && mainWindow.webContents) {
-    mainWindow.webContents.send('frame', message);  // Send the frame to the renderer process
-  }
-});
-
-ws.on('close', () => {
-  console.log("WebSocket connection closed");
-});
-
-ws.on('error', (error) => {
-  console.error("WebSocket error:", error);
-});
-
-// Handle saving the video file
-ipcMain.on("save-video", async (event, buffer) => {
-  try {
-    const { canceled, filePath } = await dialog.showSaveDialog({
-      title: "Save Video",
-      defaultPath: path.join(app.getPath("downloads"), "recorded-video.webm"),
-      filters: [{ name: "WebM Video", extensions: ["webm"] }],
-    });
-
-    if (canceled || !filePath) {
-      console.log("User canceled save dialog.");
-      return;
-    }
-
-    fs.writeFile(filePath, buffer, (err) => {
-      if (err) {
-        console.error("Failed to save video file:", err);
-        dialog.showErrorBox('Save Video Failed', `Error: ${err.message}`);
-        event.reply("save-video-reply", { success: false, error: err.message });
-      } else {
-        console.log("Video saved successfully to:", filePath);
-        event.reply("save-video-reply", { success: true });
-      }
-    });
-  } catch (error) {
-    console.error("Error during save dialog:", error);
-    dialog.showErrorBox('Save Video Failed', `Error: ${error.message}`);
-    event.reply("save-video-reply", { success: false, error: error.message });
-  }
-});
-
-if (process.env.NODE_ENV === 'development') {
-  try {
-    require('electron-reload')(__dirname, {
-      electron: require(`${__dirname}/node_modules/electron`)
-    });
-  } catch (err) {
-    console.error('Failed to initialize electron-reload:', err);
-  }
-}
+// if (process.env.NODE_ENV === 'development') {
+//   try {
+//     require('electron-reload')(__dirname, {
+//       electron: require(`${__dirname}/node_modules/electron`),
+//     });
+//   } catch (err) {
+//     console.error('Failed to initialize electron-reload:', err);
+//   }
+// }
 
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -86,11 +33,20 @@ const createWindow = () => {
       preload: path.join(__dirname, 'dist', "preload.js"),
       nodeIntegration: true,
       contextIsolation: false,
+      webSecurity: false,  // Disable web security for external content
+      allowRunningInsecureContent: true,  // Allow insecure content like local HTTP feeds
     },
     autoHideMenuBar: true,
   });
+  
+  // Remove CSP headers
+  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+    if (details.responseHeaders['content-security-policy']) {
+      delete details.responseHeaders['content-security-policy'];
+    }
+    callback({ cancel: false, responseHeaders: details.responseHeaders });
+  });
 
-  console.log(MAIN_WINDOW_WEBPACK_ENTRY);
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
     .then(() => console.log('Main window loaded'))
     .catch((error) => console.error('Error loading window:', error));
@@ -111,21 +67,28 @@ const createTray = () => {
 
   try {
     tray = new Tray(iconPath); // We need an icon here :v
-  const contextMenu = Menu.buildFromTemplate([
-    { label: 'Open',
-      click: () => {
-        mainWindow.show();
-      }},
-    { label: 'Quit',
-      click: () => {
-        app.isQuitting = true;
-        tray.destroy();
-        app.quit();
-      }}
-  ]);
+    const contextMenu = Menu.buildFromTemplate([
+      {
+        label: 'Open',
+        click: () => {
+          mainWindow.show();
+        },
+      },
+      {
+        label: 'Quit',
+        click: () => {
+          app.isQuitting = true;
+          if (flaskProcess) {
+            flaskProcess.kill(); // Stop Flask server when quitting
+          }
+          tray.destroy();
+          app.quit();
+        },
+      },
+    ]);
 
-  tray.setContextMenu(contextMenu);
-  tray.setToolTip('HGFMP');
+    tray.setContextMenu(contextMenu);
+    tray.setToolTip('HGFMP');
   } catch (error) {
     console.error('Failed to load tray icon:', error);
   }
@@ -148,6 +111,45 @@ app.on('activate', () => {
   }
 });
 
+// Handle Flask server start and stop via IPC
+ipcMain.on('start-flask', (event) => {
+  if (flaskProcess) {
+    console.log('Flask server is already running.');
+    event.reply('flask-started', { success: false, error: 'Server already running.' });
+    return;
+  }
+
+  // Resolve relative path to main.py
+  const flaskScriptPath = path.join(__dirname, '..', '..', 'demo v2 (cnn + mediapipe)', 'App_v1', 'main.py');
+  console.log('Flask Script Path:', flaskScriptPath); 
+
+  // Spawn the Flask process
+  flaskProcess = spawn('python', [flaskScriptPath], {
+    shell: true,  // For compatibility with Windows
+    detached: true,
+  });
+
+  flaskProcess.stdout.on('data', (data) => {
+    console.log(`Flask stdout: ${data}`);
+  });
+
+  flaskProcess.stderr.on('data', (data) => {
+    console.error(`Flask stderr: ${data}`);
+  });
+
+  flaskProcess.on('close', (code) => {
+    console.log(`Flask server exited with code ${code}`);
+    flaskProcess = null;
+  });
+
+  flaskProcess.on('error', (err) => {
+    console.error('Failed to start Flask process:', err);
+    event.reply('flask-started', { success: false, error: 'Failed to start Flask process' });
+  });  
+
+  event.reply('flask-started', { success: true });
+});
+
 // Global Error Handling and Debugging
 process.on('uncaughtException', (error) => {
   console.error('Uncaught Exception:', error);
@@ -156,8 +158,3 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason) => {
   console.error('Unhandled Promise Rejection:', reason);
 });
-
-// console.log(path.join(__dirname, 'src', 'neco.png'));
-// mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY).catch((error) => {
-//   console.error('Failed to load URL:', error);
-// });

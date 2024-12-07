@@ -1,7 +1,4 @@
-import asyncio
-import websockets
 import cv2
-from base64 import b64encode
 import numpy as np
 from time import time
 from tensorflow.keras.models import load_model
@@ -10,13 +7,17 @@ from mediapipe.python.solutions import hands, drawing_utils
 from FrameUpdate import *
 from Keybind import *
 from Camera import *
-from flask import Flask
+from flask import Flask, Response, jsonify
+from flask_cors import CORS
 import logging
 
 app = Flask(__name__)
+CORS(app)
 mpHands = hands
 mp_drawing = drawing_utils 
 hands = mpHands.Hands()
+is_shutting_down = False
+
 
 model = load_model('model2.18.0.keras')
 labels = ['A', 'B', 'F', 'L', 'W', 'Y']
@@ -38,14 +39,17 @@ pred_lock = Lock()
 
 # Function to perform prediction 
 def pred(img, labels: list, model, unknownThresh=0.97):
-    global pred_output, cLevel
+    global pred_output, cLevel, is_shutting_down
     
     # Perform prediction in a thread-safe manner
     with pred_lock:
+        if is_shutting_down:
+            return  # Exit early if the server is shutting down
+            
         pred = model.predict(img, verbose=0)
         max_position = np.argmax(pred)
         pred_output = labels[max_position]
-        if pred[0][max_position] < unknownThresh: 
+        if pred[0][max_position] < unknownThresh:
             pred_output = 'unknown gesture'
         cLevel = np.ceil(pred[0][max_position] * 100) / 100
     
@@ -58,8 +62,17 @@ def getShortcut():
 def getCameraSource():
     return getCameraSourceAPI()
 
-# WebSocket Server to send frames
-async def send_video(websocket):
+@app.route('/health', methods=['GET'])
+def health_check():
+    return jsonify({"status": "running"}), 200
+
+# Flask route to stream video
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+cap_lock = Lock()
+def generate_frames():
     cap = cv2.VideoCapture(0)
     if not cap.isOpened():
         logger.error("Error: Unable to open the camera.")
@@ -67,13 +80,6 @@ async def send_video(websocket):
 
     target_fps = 11  # Desired frames per second
     frame_duration = 1.0 / target_fps  # Duration of each frame in seconds
-
-    wCam, hCam = 640, 480
-    cap.set(3, wCam)
-    cap.set(4, hCam)
-
-    # detector = htm.handDetector(maxHands=1)
-
     pred_thread = None
     key_thread = None
     unknownThresh = 0.97
@@ -81,14 +87,22 @@ async def send_video(websocket):
     count = 0
     pTime = 0
     activationTime = 10
-    # frame_skip = 5  # Process every 5th frame
 
+    wCam, hCam = 640, 480
+    cap.set(3, wCam)
+    cap.set(4, hCam)
+
+    # detector = htm.handDetector(maxHands=1)
+
+    
     while True:
         cTime = time.time()
-        success, img = cap.read()
-        if not success:
-            logger.error("Failed to capture frame")
-            break
+        
+        with cap_lock:  # Ensure single-threaded access to the camera
+            success, img = cap.read()
+            if not success:
+                logger.error(f"Failed to capture frame at time {cTime}")
+                break
 
         output, input_IMG = img_to_npArray(img, draw=True, mpHands=mpHands, mp_drawing=mp_drawing)
 
@@ -98,8 +112,8 @@ async def send_video(websocket):
             pred_thread.start()
 
         count += 1
-
-        if prev_pred_output != pred_output: count = 0
+        if prev_pred_output != pred_output: 
+            count = 0
 
         if count >= activationTime and pred_output != "unknown gesture":
             cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
@@ -116,11 +130,7 @@ async def send_video(websocket):
         cv2.putText(output, 'fps: ' + str(int(fps)), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
         cv2.putText(output, f'{pred_output} - {cLevel}', (10, 140), cv2.FONT_HERSHEY_PLAIN, 3, (255, 255, 255), 3)
 
-        # Encode the frame to JPEG
-        # _, buffer = cv2.imencode('.jpg', output)
-        # frame_base64 = b64encode(buffer).decode('utf-8')
-
-        cv2.imshow('Img', output)
+        # cv2.imshow('Img', output)
 
         # Calculate the time taken to process the frame
         elapsed_time = time.time() - cTime
@@ -130,29 +140,17 @@ async def send_video(websocket):
         if remaining_time > 0:
             time.sleep(remaining_time)
         
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
-        
-        # Send frame only if it's time for this frame to be processed
+        # if cv2.waitKey(1) & 0xFF == ord('q'):
+        #     break
 
         _, buffer = cv2.imencode('.jpg', output)
-        frame_base64 = b64encode(buffer).decode('utf-8')
-
-        try:
-            await websocket.send(frame_base64)
-        except websockets.exceptions.ConnectionClosed:
-            logger.error("WebSocket connection closed unexpectedly")
-            break
+        frame = buffer.tobytes()
+        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     cap.release()
     cv2.destroyAllWindows()
 
-async def start_websocket_server():
-    server = await websockets.serve(send_video, "localhost", 8765)
-    await server.wait_closed()
 
-def runFlask():
-    app.run(debug=True, use_reloader=False)
 
 def main():
     # User will input this on the UI
@@ -171,13 +169,11 @@ def main():
     #         print(e)
     #         print("----------")
             
-    flask_thread = Thread(target=runFlask)
-    flask_thread.daemon = True
-    flask_thread.start()
+    return 0
 
-    # Start the WebSocket server
-    asyncio.get_event_loop().run_until_complete(start_websocket_server())
-
+def run_flask():
+    app.run(debug=False, use_reloader=False)
 
 if __name__ == '__main__':
-    main()
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
