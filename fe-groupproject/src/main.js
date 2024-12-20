@@ -1,6 +1,6 @@
 const { app, BrowserWindow, Tray, Menu, ipcMain } = require('electron');
 const { spawn } = require("child_process");
-// const fs = require('fs');
+const fs = require('fs');
 const path = require('node:path');
 
 let mainWindow;
@@ -40,12 +40,12 @@ const createWindow = () => {
   });
   
   // Remove CSP headers
-  mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
-    if (details.responseHeaders['content-security-policy']) {
-      delete details.responseHeaders['content-security-policy'];
-    }
-    callback({ cancel: false, responseHeaders: details.responseHeaders });
-  });
+  // mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
+  //   if (details.responseHeaders['content-security-policy']) {
+  //     delete details.responseHeaders['content-security-policy'];
+  //   }
+  //   callback({ cancel: false, responseHeaders: details.responseHeaders });
+  // });
 
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
     .then(() => console.log('Main window loaded'))
@@ -111,6 +111,25 @@ app.on('activate', () => {
   }
 });
 
+
+// Get the current working directory where the script is executed
+let currentDir = process.cwd();
+console.log("Current working directory:", currentDir);
+
+// Navigate upwards from the current directory to find 'USTHGroupProject'
+function findProjectRoot() {
+  let dir = currentDir;
+  // Traverse upwards to find the root directory 'USTHGroupProject'
+  while (dir !== path.parse(dir).root) {
+    if (fs.existsSync(path.join(dir, 'USTHGroupProject'))) {
+      return dir;  // This will return the directory containing USTHGroupProject
+    }
+    dir = path.dirname(dir);
+  }
+  throw new Error('USTHGroupProject directory not found');
+}
+
+
 // Handle Flask server start and stop via IPC
 ipcMain.on('start-flask', (event) => {
   if (flaskProcess) {
@@ -119,14 +138,18 @@ ipcMain.on('start-flask', (event) => {
     return;
   }
 
-  // Resolve relative path to main.py
-  const flaskScriptPath = path.join(__dirname, '..', '..', 'demo v2 (cnn + mediapipe)', 'App_v1', 'main.py');
-  console.log('Flask Script Path:', flaskScriptPath); 
+  const projectRoot = findProjectRoot();
+  console.log("Project Root Path:", projectRoot);
+  
+  // Now construct your path relative to USTHGroupProject
+  const flaskScriptPath = path.join(projectRoot, 'USTHGroupProject', 'demo v2 (cnn + mediapipe)', 'App_v1', 'main.py');
+  console.log("Flask Script Path:", flaskScriptPath);
 
   // Spawn the Flask process
   flaskProcess = spawn('python', [flaskScriptPath], {
     shell: true,  // For compatibility with Windows
     detached: true,
+    // cwd: flaskScriptPath, // Set working directory to USTHGroupProject
   });
 
   flaskProcess.stdout.on('data', (data) => {

@@ -11,6 +11,11 @@ module.exports = {
   externals: {
     'electron-reload': 'commonjs electron-reload',
   },
+  node: {
+    global: false,
+    __filename: false,
+    __dirname: false,
+  },
   devServer: {
     historyApiFallback: true
   },
