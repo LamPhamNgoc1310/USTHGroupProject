@@ -1,8 +1,16 @@
-.home-container {
+html, body, #root {
+    height: 100%;
+    margin: 0;
+  }
+  
+  .home-container {
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 10%;
+    height: 100vh;
+    width: 100vw;
     padding: 10px;
-    
-}
-
+    box-sizing: border-box;
+  }
+  

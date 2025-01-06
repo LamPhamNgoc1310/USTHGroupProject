@@ -63,7 +63,7 @@ const createWindow = () => {
 };
 
 const createTray = () => {
-  const iconPath = path.join(__dirname, 'dist', 'neco.png'); // Path to neco.png
+  const iconPath = path.join(__dirname, 'dist', 'electron-icon.png'); // Path to neco.png
 
   try {
     tray = new Tray(iconPath); // We need an icon here :v

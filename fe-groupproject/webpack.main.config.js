@@ -17,7 +17,7 @@ module.exports = {
   plugins: [
     new CopyWebpackPlugin({
       patterns: [
-        { from: 'src/neco.png', to: 'dist/neco.png' },
+        { from: 'src/electron-icon.png', to: 'dist/electron-icon.png' },
         { from: 'src/preload.js', to: 'dist/preload.js' },
       ],
     }),
