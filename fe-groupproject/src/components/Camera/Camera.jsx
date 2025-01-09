@@ -81,9 +81,11 @@ function Camera() {
           <iframe
             src="http://localhost:5000/video_feed"
             title="Video Feed"
-            width="640"
-            height="480"
-            frameBorder="0"
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "contain",
+            }}
             allowFullScreen
             ref={videoRef}
             onError={() => {
