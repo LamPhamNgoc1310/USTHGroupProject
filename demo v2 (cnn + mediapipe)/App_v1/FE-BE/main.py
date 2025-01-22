@@ -1,35 +1,33 @@
-import cv2 as cv
-import numpy as np
-from time import time
-from tensorflow.keras.models import load_model
-from threading import Thread, Lock
-# from mediapipe.python.solutions import hands, drawing_utils
-from FrameUpdate import *
-from Keybind import *
-from Camera import *
+import signal
+import threading
 from flask import Flask, Response, jsonify
 from flask_cors import CORS
-import logging
+import cv2 as cv2
+import numpy as np
+from tensorflow.keras.models import load_model
 import mediapipe as mp
+from Keybind import *
+from Camera import *
 from functions import *
-# import pandas as pd
-import copy
-import os
 from CvFpsCalc import CvFpsCalc
-
+import logging
+import copy
+import time
 
 
 app = Flask(__name__)
 CORS(app)
-# mpHands = hands
-# mp_drawing = drawing_utils 
-# hands = mpHands.Hands()
-is_shutting_down = False
 
 
 # Setup logging for better debugging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+
+# Global Variables
+shutdown_event = threading.Event()  # Event to signal shutdown
+cap_lock = threading.Lock()
+last_keybind_time = time.time()  # Initialize the keybind time
 
 
 @app.route('/shortcuts', methods=['GET'])
@@ -48,7 +46,7 @@ def health_check():
 @app.route('/video_feed')
 def video_feed():
     return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
-cap_lock = Lock()
+
 
 
 
@@ -82,6 +80,7 @@ def generate_frames():
     if not cap.isOpened():
         logger.error("Error: Unable to open the camera.")
         return
+    
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
     print(cap_device, cap_width, cap_height)
@@ -124,7 +123,7 @@ def generate_frames():
             break
         
         """ k -> mode = 1"""
-        number, mode, prediction_enabled = select_mode(key, mode, prediction_enabled)
+        # number, mode, prediction_enabled = select_mode(key, mode, prediction_enabled)
 
         # if mode == 1 and recCount == 0:
         #     # Check if the CSV file exists
@@ -144,84 +143,74 @@ def generate_frames():
 
 
         """Camera capture"""
-        ret, image = cap.read()
-        if not ret:
-            break
-        image = cv.flip(image, 1) # Mirror display ()
-        debug_image = copy.deepcopy(image)
+        while not shutdown_event.is_set():  # Check for shutdown signal
+            ret, image = cap.read()
+            if not ret:
+                break
+            image = cv.flip(image, 1) # Mirror display ()
+            debug_image = copy.deepcopy(image)
 
 
-        if prediction_enabled:
-            """Detection implementation"""
-            
-            image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
+            if prediction_enabled:
+                """Detection implementation"""
+                
+                image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
 
-            image.flags.writeable = False
-            results = hands.process(image)
-            image.flags.writeable = True # drawing the landmarks or connections back onto the image once the detection has been completed
+                image.flags.writeable = False
+                results = hands.process(image)
+                image.flags.writeable = True # drawing the landmarks or connections back onto the image once the detection has been completed
 
-            """Visualization"""
-            if results.multi_hand_landmarks is not None:
-                for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                    
-                    # Bounding Box calculation
-                    brect = calc_bounding_rect(debug_image, hand_landmarks)
+                """Visualization"""
+                if results.multi_hand_landmarks is not None:
+                    for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                        
+                        # Bounding Box calculation
+                        brect = calc_bounding_rect(debug_image, hand_landmarks)
 
-                    # Landmark calculation
-                    Landmark_list = calc_landmark_list(debug_image, hand_landmarks)
+                        # Landmark calculation
+                        Landmark_list = calc_landmark_list(debug_image, hand_landmarks)
 
-                    # Conversion to relative coordinates / normalized coordinates
-                    pre_processed_landmark_list = pre_process_landmark(Landmark_list)
+                        # Conversion to relative coordinates / normalized coordinates
+                        pre_processed_landmark_list = pre_process_landmark(Landmark_list)
 
-                    # # Write to the dataset file
-                    # if mode == 1 and recCount < 500:
-                    #     # Create a new number for the current entry (e.g., based on the max label in the CSV)
-                    #     number = df[0].max() + 1 if not df.empty else 0
-                    #     recCount += 1
-                    #     cv.putText(debug_image, 'hand record activated', (10, 70), cv.FONT_HERSHEY_SIMPLEX, 1.3, (0, 255, 0), 3)
-                    #     print(f"Mode: {mode}, Observation: {recCount}, Label: {number}")
-                    #     # Write to the dataset file
-                    #     logging_csv(number, pre_processed_landmark_list)
-                    #     # Store labels in 'keypoint_classifier_label_new.csv'
-                    #     store_labels_to_new_file('new_keypoint_2.csv', 'keypoint_classifier_label_2.csv')
-
-                    # Hand sign classification
-                    
-                    # hand_sign_id, confidence = keypoint_classifier.predict(pre_processed_landmark_list)
-                    pred = model.predict(np.array([pre_processed_landmark_list]), verbose=0)
-                    hand_sign_id = np.argmax(pred)
-                    confidence_percentage = np.ceil(pred[0][hand_sign_id] * 100)
+                        # Hand sign classification
+                        
+                        # hand_sign_id, confidence = keypoint_classifier.predict(pre_processed_landmark_list)
+                        pred = model.predict(np.array([pre_processed_landmark_list]), verbose=0)
+                        hand_sign_id = np.argmax(pred)
+                        confidence_percentage = np.ceil(pred[0][hand_sign_id] * 100)
 
 
-                    # Mark as 'Unknown' if confidence is below 90%
-                    if confidence_percentage < 80:
-                        hand_sign_text = "Unknown"
-                    else:
-                        hand_sign_text = keypoint_classifier_labels[hand_sign_id]
+                        # Mark as 'Unknown' if confidence is below 90%
+                        if confidence_percentage < 80:
+                            hand_sign_text = "Unknown"
+                        else:
+                            hand_sign_text = keypoint_classifier_labels[hand_sign_id]
 
-                    # Drawing part
-                    debug_image = draw_bounding_rect(use_brect, debug_image, brect)
-                    debug_image = draw_landmarks(debug_image, Landmark_list)
-                    debug_image = draw_info_text(
-                        debug_image,
-                        brect,
-                        handedness,
-                        hand_sign_text,
-                        confidence_percentage
-                    )
+                        # Drawing part
+                        debug_image = draw_bounding_rect(use_brect, debug_image, brect)
+                        debug_image = draw_landmarks(debug_image, Landmark_list)
+                        debug_image = draw_info_text(
+                            debug_image,
+                            brect,
+                            handedness,
+                            hand_sign_text,
+                            confidence_percentage
+                        )
 
-                    # Activate keybind if necessary (with delay)
-                    last_keybind_time = keybind(hand_sign_text, last_keybind_time)  # Update the keybind time
+                        # Activate keybind if necessary (with delay)
+                        last_keybind_time = keybind(hand_sign_text, last_keybind_time)  # Update the keybind time
 
-        # debug_image = draw_point_history(debug_image, point_history)
-        debug_image = draw_info(debug_image, fps, mode, number)
+            # debug_image = draw_point_history(debug_image, point_history)
+            cv.putText(debug_image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,1.0, (255, 255, 255), 3, cv.LINE_AA)
 
-        # Display Rendered Image
-        cv.imshow('Hand Gesture Recognition', debug_image)
 
-        _, buffer = cv2.imencode('.jpg', debug_image)
-        frame = buffer.tobytes()
-        yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+            # Display Rendered Image
+            # cv.imshow('Hand Gesture Recognition', debug_image)
+
+            _, buffer = cv2.imencode('.jpg', debug_image)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\nContent-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
 
     cap.release()
     cv2.destroyAllWindows()
@@ -229,8 +218,26 @@ def generate_frames():
 
 
 def run_flask():
-    app.run(debug=False, use_reloader=False)
+    logger.info("Starting Flask server...")
+    app.run(host="0.0.0.0", port=5000, debug=False, use_reloader=False)
+
+def signal_handler(signum, frame):
+    logger.info(f"Signal {signum} received. Initiating shutdown...")
+    shutdown_event.set()  # Trigger shutdown event
 
 if __name__ == '__main__':
-    flask_thread = Thread(target=run_flask)
+    # Set Signal Handlers for Graceful Shutdown
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+    
+    # Start Flask Server in a Separate Thread
+    flask_thread = threading.Thread(target=run_flask, daemon=True)
     flask_thread.start()
+
+    logger.info("Main thread is waiting for shutdown signal.")
+    try:
+        while not shutdown_event.is_set():
+            time.sleep(0.1)  # Prevent busy-waiting
+    finally:
+        logger.info("Shutting down application...")
+        flask_thread.join()  # Ensure Flask thread terminates

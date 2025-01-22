@@ -1,6 +1,6 @@
-L:ctrl,up
-W:ctrl,down
-F:ctrl,left
-B:ctrl,right
-A:space
-Y:ctrl,r
+0:ctrl,up
+1:ctrl,down
+2:ctrl,left
+3:ctrl,right
+4:space
+5:ctrl,r

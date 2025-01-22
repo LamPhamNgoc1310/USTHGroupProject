@@ -19,8 +19,8 @@ hands = mpHands.Hands()
 is_shutting_down = False
 
 
-model = load_model('model2.18.0.keras')
-labels = ['A', 'B', 'F', 'L', 'W', 'Y']
+model = load_model('keypoint_classifier.keras')
+labels = ['0' ,'1', '2', '3', '4', '5']
 pred_output = ''
 cLevel = 0
 
@@ -28,7 +28,7 @@ cLevel = 0
 shortcutFile = 'shortcuts.txt'
 shortcutDict =  loadShortcut(shortcutFile)
 
-# loadShortcut(shortcutFile)
+loadShortcut(shortcutFile)
 
 # Setup logging for better debugging
 logging.basicConfig(level=logging.DEBUG)
@@ -119,7 +119,7 @@ def generate_frames():
 
         if count >= activationTime and pred_output != "unknown gesture":
             cv2.putText(output, 'ACTIVATED', (10, 200), cv2.FONT_HERSHEY_PLAIN, 3, (0, 255, 0), 3)
-            # activateShortcut(pred_output, count, activationTime,shortcutDict)
+            activateShortcut(pred_output, count, activationTime,shortcutDict)
             if (key_thread is None) or (not key_thread.is_alive()):
                     # Start a new keybinding activation thread
                     key_thread = Thread(target=activateShortcut, args=(pred_output, count, activationTime, shortcutDict))
