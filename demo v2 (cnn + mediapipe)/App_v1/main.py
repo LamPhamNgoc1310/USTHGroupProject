@@ -89,8 +89,8 @@ def generate_frames():
     activationTime = 10
 
     wCam, hCam = 640, 480
-    cap.set(3, wCam)
-    cap.set(4, hCam)
+    cap.set(cv2.CAP_PROP_FRAME_WIDTH, wCam)
+    cap.set(cv2.CAP_PROP_FRAME_HEIGHT, hCam)
 
     # detector = htm.handDetector(maxHands=1)
 
@@ -103,6 +103,8 @@ def generate_frames():
             if not success:
                 logger.error(f"Failed to capture frame at time {cTime}")
                 break
+        
+        img = cv2.resize(img, (wCam, hCam))
 
         output, input_IMG = img_to_npArray(img, draw=True, mpHands=mpHands, mp_drawing=mp_drawing)
 
@@ -140,8 +142,8 @@ def generate_frames():
         if remaining_time > 0:
             time.sleep(remaining_time)
         
-        # if cv2.waitKey(1) & 0xFF == ord('q'):
-        #     break
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
 
         _, buffer = cv2.imencode('.jpg', output)
         frame = buffer.tobytes()
