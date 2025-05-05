@@ -1,0 +1,6 @@
+L:ctrl,up
+W:ctrl,down
+F:ctrl,left
+B:ctrl,right
+A:space
+Y:ctrl,r

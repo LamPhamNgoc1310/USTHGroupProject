@@ -1,0 +1,29 @@
+{
+    "shortcuts": 
+    [
+        {
+            "name": "Play/Pause - space",
+            "keys": ["space"]
+        },
+        {
+            "name": "Next - ctrl right",
+            "keys": ["ctrl", "right"]
+        },
+        {
+            "name": "Back - ctrl left",
+            "keys": ["ctrl", "left"]
+        },
+        {
+            "name": "Vol up - ctrl up",
+            "keys": ["ctrl", "up"]
+        },
+        {
+            "name": "Vol down - ctrl down",
+            "keys": ["ctrl", "down"]
+        },
+        {
+            "name": "Repeat - ctrl R",
+            "keys": ["ctrl", "R"]
+        }
+    ]
+}
